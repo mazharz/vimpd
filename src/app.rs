@@ -4,20 +4,26 @@ use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
-    style::Stylize,
     text::Line,
     widgets::{Block, Paragraph, Widget},
     DefaultTerminal, Frame,
 };
 
+use crate::mpd::Mpd;
+
 #[derive(Debug)]
 pub struct App {
     is_running: bool,
+    is_playing: bool,
 }
 
 impl App {
     pub fn new() -> App {
-        App { is_running: true }
+        let is_playing = Mpd::default().get_status();
+        App {
+            is_running: true,
+            is_playing,
+        }
     }
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
@@ -57,7 +63,14 @@ impl App {
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let block = Block::default();
-        Paragraph::new(Line::from("hello vimpd!"))
+
+        let status_text = if self.is_playing {
+            "Mpd is jammin'!"
+        } else {
+            "Mpd is sleeping."
+        };
+
+        Paragraph::new(Line::from(status_text))
             .block(block)
             .render(area, buf)
     }
