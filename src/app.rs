@@ -1,4 +1,7 @@
-use std::io;
+use std::{
+    io,
+    time::{Duration, Instant},
+};
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
@@ -14,24 +17,47 @@ use crate::mpd::Mpd;
 #[derive(Debug)]
 pub struct App {
     is_running: bool,
-    is_playing: bool,
+    mpd: Mpd,
 }
 
 impl App {
     pub fn new() -> App {
-        let is_playing = Mpd::default().get_status();
         App {
             is_running: true,
-            is_playing,
+            mpd: Mpd::new(),
         }
     }
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
-        while self.is_running {
+        // TODO: make configurable
+        let tick_rate = 1000;
+        let tick_rate = Duration::from_millis(tick_rate);
+
+        let mut last_tick = Instant::now();
+
+        loop {
+            if !self.is_running {
+                return Ok(());
+            }
             terminal.draw(|frame| self.draw(frame))?;
-            self.handle_events()?;
+
+            let timeout = tick_rate
+                .checked_sub(last_tick.elapsed())
+                .unwrap_or_else(|| Duration::from_secs(0));
+
+            if event::poll(timeout)? {
+                self.handle_events()?;
+            }
+
+            if last_tick.elapsed() >= tick_rate {
+                self.on_tick();
+                last_tick = Instant::now();
+            }
         }
-        Ok(())
+    }
+
+    fn on_tick(&mut self) {
+        self.mpd.on_tick();
     }
 
     fn draw(&self, frame: &mut Frame) {
@@ -64,7 +90,7 @@ impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let block = Block::default();
 
-        let status_text = if self.is_playing {
+        let status_text = if self.mpd.is_playing {
             "Mpd is jammin'!"
         } else {
             "Mpd is sleeping."
