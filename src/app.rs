@@ -6,13 +6,13 @@ use std::{
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     buffer::Buffer,
-    layout::Rect,
+    layout::{Constraint, Rect},
     text::Line,
     widgets::{Block, Paragraph, Widget},
     DefaultTerminal, Frame,
 };
 
-use crate::mpd::Mpd;
+use crate::{helper::ui::UiHelper, mpd::Mpd};
 
 #[derive(Debug)]
 pub struct App {
@@ -77,6 +77,7 @@ impl App {
     fn handle_key_event(&mut self, key_event: KeyEvent) {
         match key_event.code {
             KeyCode::Char('q') => self.exit(),
+            KeyCode::Enter => self.mpd.toggle_play_pause(),
             _ => {}
         }
     }
@@ -95,6 +96,12 @@ impl Widget for &App {
         } else {
             "Mpd is sleeping."
         };
+
+        let area = UiHelper::center(
+            area,
+            Constraint::Length(status_text.len() as u16),
+            Constraint::Length(1),
+        );
 
         Paragraph::new(Line::from(status_text))
             .block(block)

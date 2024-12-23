@@ -1,4 +1,5 @@
 mod app;
+mod helper;
 mod mpd;
 
 use std::io;

@@ -13,7 +13,17 @@ impl Mpd {
     }
 
     pub fn on_tick(&mut self) {
-        self.is_playing = Self::get_status()
+        self.sync_state();
+    }
+
+    pub fn toggle_play_pause(&mut self) {
+        let mut connection = Self::get_connection();
+        let _ = connection.toggle_pause();
+        self.sync_state();
+    }
+
+    fn sync_state(&mut self) {
+        self.is_playing = Self::get_status();
     }
 
     fn get_status() -> bool {
